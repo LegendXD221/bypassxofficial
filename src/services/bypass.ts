@@ -54,6 +54,20 @@ function endpointWithUrl(endpoint: string, target: string): string {
   return `${endpoint}${separator}url=${encodeURIComponent(target)}`;
 }
 
+function targetVariants(target: string): string[] {
+  try {
+    const original = new URL(target);
+    if (!original.hostname.toLowerCase().endsWith('linkvertise.com')) return [target];
+    const canonical = new URL(original);
+    canonical.searchParams.delete('o');
+    canonical.searchParams.delete('r');
+    const cleaned = canonical.toString();
+    return cleaned === target ? [target] : [target, cleaned];
+  } catch {
+    return [target];
+  }
+}
+
 async function callProviderOnce(provider: Provider, target: string, method: 'GET' | 'POST', includeTarget = true): Promise<BypassResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -117,19 +131,27 @@ function alternateMethods(provider: Provider): ('GET' | 'POST')[] {
 
 async function callProvider(provider: Provider, target: string): Promise<BypassResult> {
   let lastError: unknown;
-  for (const method of alternateMethods(provider)) {
-    for (let attempt = 0; attempt < 2; attempt += 1) {
-      try {
-        const result = await callProviderOnce(provider, target, method);
-        if (result.pending && provider.adapter === 'usebypass' && result.jobId) {
-          return await pollUseBypass(provider, target, result.jobId, result);
+  for (const variant of targetVariants(target)) {
+    for (const method of alternateMethods(provider)) {
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        try {
+          const result = await callProviderOnce(provider, variant, method);
+          if (result.pending && provider.adapter === 'usebypass' && result.jobId) {
+            try {
+              return await pollUseBypass(provider, variant, result.jobId, result);
+            } catch (error) {
+              const pollError = error instanceof Error ? error as ProviderError : errorWithStatus('Async provider job failed');
+              pollError.retryable = false;
+              throw pollError;
+            }
+          }
+          return result;
+        } catch (error) {
+          lastError = error;
+          const typed = error as ProviderError;
+          if (!typed.retryable || attempt === 1) break;
+          await new Promise((resolve) => setTimeout(resolve, retryDelayMs * (attempt + 1)));
         }
-        return result;
-      } catch (error) {
-        lastError = error;
-        const typed = error as ProviderError;
-        if (!typed.retryable || attempt === 1) break;
-        await new Promise((resolve) => setTimeout(resolve, retryDelayMs * (attempt + 1)));
       }
     }
   }

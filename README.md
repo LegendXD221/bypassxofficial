@@ -10,7 +10,7 @@ A production-oriented TypeScript Discord bot built around the Alysse API, with *
 - `/server authorize|deauthorize|status` for owner-controlled guild access.
 - `/autobypass enable|disable|list` for owner-controlled message URL monitoring.
 - Automatic URL detection in configured text channels with per-user cooldown protection.
-- Auto-bypass posts `<@user> is bypassing link...`, edits that same bot message into the result, and can delete only that user's source/result pair after 30 seconds.
+- Auto-bypass posts `<@user> bypassing your link...`, edits that same bot message into the result, and can delete only that user's source/result pair after 30 seconds.
 - `/api add|remove|list` for custom fallback providers.
 - `/owner stats|health` for the owner dashboard.
 - `/status` for live gateway latency, storage, provider, uptime, and auto-bypass information.
