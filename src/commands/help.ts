@@ -7,6 +7,8 @@ const command: Command = {
   async execute(interaction) {
     await interaction.reply({ components: [panel('BypassX commands', [
       '`/bypass url:<link>` — resolve a supported link',
+      '`/autobypass enable|disable|list` — monitor a channel for links (owner only)',
+      '`/status` — show gateway, provider, and cache health',
       '`/server authorize|deauthorize|status` — manage guild access (owner only)',
       '`/api list|add|remove` — manage fallback providers (owner only)',
       '`/help` — show this help',

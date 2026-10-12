@@ -16,6 +16,7 @@ export const config = {
   autoBypassCooldownSeconds: Number(process.env.AUTO_BYPASS_COOLDOWN_SECONDS ?? 15),
   autoBypassMaxUrlsPerMessage: Number(process.env.AUTO_BYPASS_MAX_URLS_PER_MESSAGE ?? 1),
   autoBypassDeleteAfterSeconds: Math.max(1, Number(process.env.AUTO_BYPASS_DELETE_AFTER_SECONDS ?? 30)),
+  bypassCacheTtlSeconds: Math.max(0, Number(process.env.BYPASS_CACHE_TTL_SECONDS ?? 300)),
   statusIntervalSeconds: Math.max(30, Number(process.env.STATUS_ROTATOR_INTERVAL_SECONDS ?? 90)),
   statusMessages: csv('STATUS_ROTATOR_MESSAGES'),
   alysseApiUrl: process.env.ALYSSE_API_URL ?? 'https://alysse.top/api/bypass',

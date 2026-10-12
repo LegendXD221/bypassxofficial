@@ -30,5 +30,6 @@ export type BypassResult = {
   wsUrl?: string;
   error?: string;
   ms?: number;
+  cached?: boolean;
   provider: string;
 };

@@ -11,6 +11,9 @@ type Health = { failures: number; cooldownUntil: number };
 const timeoutMs = 12_000;
 const retryDelayMs = 350;
 const health = new Map<string, Health>();
+const cacheTtlMs = config.bypassCacheTtlSeconds * 1_000;
+const cache = new Map<string, { expiresAt: number; result: BypassResult }>();
+const inflight = new Map<string, Promise<BypassResult>>();
 
 function stringValue(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
@@ -176,7 +179,22 @@ export function providerHealthSnapshot(): Array<{ provider: string; failures: nu
   }));
 }
 
-export async function bypass(target: string, fallbacks: FallbackApi[]): Promise<BypassResult> {
+function cacheKey(target: string): string {
+  try {
+    const url = new URL(target);
+    url.hash = '';
+    return url.toString();
+  } catch {
+    return target;
+  }
+}
+
+function cleanCache(): void {
+  const now = Date.now();
+  for (const [key, value] of cache) if (value.expiresAt <= now) cache.delete(key);
+}
+
+async function resolveProviders(target: string, fallbacks: FallbackApi[]): Promise<BypassResult> {
   const providers = [...builtInProviders(), ...fallbacks] as Provider[];
   const errors: string[] = [];
   for (const provider of providers) {
@@ -194,4 +212,28 @@ export async function bypass(target: string, fallbacks: FallbackApi[]): Promise<
     }
   }
   return { ok: false, provider: 'none', error: errors.join('\n') || 'No providers configured' };
+}
+
+export async function bypass(target: string, fallbacks: FallbackApi[]): Promise<BypassResult> {
+  cleanCache();
+  const key = cacheKey(target);
+  const cached = cache.get(key);
+  if (cached) return { ...cached.result, cached: true };
+  const active = inflight.get(key);
+  if (active) return { ...(await active), cached: false };
+
+  const request = resolveProviders(target, fallbacks);
+  inflight.set(key, request);
+  try {
+    const result = await request;
+    if (result.ok && result.destination && cacheTtlMs > 0) cache.set(key, { expiresAt: Date.now() + cacheTtlMs, result });
+    return result;
+  } finally {
+    inflight.delete(key);
+  }
+}
+
+export function bypassCoreStats(): { cacheEntries: number; inflight: number; cacheTtlSeconds: number } {
+  cleanCache();
+  return { cacheEntries: cache.size, inflight: inflight.size, cacheTtlSeconds: config.bypassCacheTtlSeconds };
 }

@@ -2,6 +2,7 @@ import { SlashCommandBuilder } from 'discord.js';
 import type { Command } from './types.js';
 import { panel, v2Flags } from '../utils/components.js';
 import { databaseEnabled, databaseStats } from '../services/database.js';
+import { bypassCoreStats, providerHealthSnapshot } from '../services/bypass.js';
 
 const command: Command = {
   data: new SlashCommandBuilder().setName('owner').setDescription('Owner-only BypassX controls')
@@ -21,7 +22,15 @@ const command: Command = {
       ].join('\n'))], flags: v2Flags });
       return;
     }
-    await interaction.reply({ components: [panel('BypassX health', `Storage: **${databaseEnabled ? 'Neon connected' : 'Local fallback'}**\nProviders in chain: **${state.fallbackApis.length + 3}**\nAuto-bypass channels: **${state.autoBypassChannels.length}**`)], flags: v2Flags });
+    const core = bypassCoreStats();
+    const unhealthy = providerHealthSnapshot().filter((provider) => provider.cooldownUntil).map((provider) => provider.provider);
+    await interaction.reply({ components: [panel('BypassX health', [
+      `Storage: **${databaseEnabled ? 'Neon connected' : 'Local fallback'}**`,
+      `Providers in chain: **${state.fallbackApis.length + 3}**`,
+      `Provider cooldowns: **${unhealthy.length ? unhealthy.join(', ') : 'none'}**`,
+      `Cache: **${core.cacheEntries} entries** · **${core.cacheTtlSeconds}s TTL**`,
+      `Auto-bypass channels: **${state.autoBypassChannels.length}**`,
+    ].join('\n'))], flags: v2Flags });
   },
 };
 export default command;

@@ -11,6 +11,7 @@ import { panel, publicV2Flags } from './utils/components.js';
 import { startHealthServer } from './web.js';
 import { startStatusRotator } from './services/presence.js';
 import { syncCommands } from './services/command-sync.js';
+import { parsePublicUrl } from './utils/urls.js';
 
 export async function loadCommands(): Promise<Command[]> {
   const directory = dirname(fileURLToPath(import.meta.url));
@@ -53,6 +54,9 @@ if (process.argv[1] && basename(process.argv[1]) === basename(fileURLToPath(impo
     if (command.ownerOnly && !config.owners.has(interaction.user.id)) {
       await interaction.reply({ content: 'Only configured BypassX owners can use this command.', flags: MessageFlags.Ephemeral }); return;
     }
+    if (!command.ownerOnly && !interaction.guildId) {
+      await interaction.reply({ content: 'This command can only be used inside an authorized server.', flags: MessageFlags.Ephemeral }); return;
+    }
     if (!command.ownerOnly && interaction.guildId && !state.authorizedGuildIds.includes(interaction.guildId)) {
       await interaction.reply({ content: 'This server is not authorized for BypassX. Ask a bot owner to run `/server authorize` here.', flags: MessageFlags.Ephemeral }); return;
     }
@@ -77,14 +81,17 @@ if (process.argv[1] && basename(process.argv[1]) === basename(fileURLToPath(impo
     const lastRun = cooldowns.get(cooldownKey) ?? 0;
     if (now - lastRun < Math.max(0, config.autoBypassCooldownSeconds) * 1000) return;
     cooldowns.set(cooldownKey, now);
+    setTimeout(() => cooldowns.delete(cooldownKey), Math.max(1, config.autoBypassCooldownSeconds) * 1000 + 1000);
+    const parsed = parsePublicUrl(urls[0]);
+    if (!parsed) return;
     try {
       const progressMessage = await message.reply({
         components: [panel('BypassX', `<@${message.author.id}> is bypassing link...`)],
         flags: publicV2Flags,
       });
-      const result = await bypass(urls[0], state.fallbackApis);
+      const result = await bypass(parsed.toString(), state.fallbackApis);
       const description = result.ok
-        ? `Detected from <@${message.author.id}>\nProvider: **${result.provider}**${result.service ? ` · ${result.service}` : ''}`
+        ? `Detected from <@${message.author.id}>\nProvider: **${result.provider}**${result.service ? ` · ${result.service}` : ''}${result.cached ? ' · cached' : ''}`
         : `All providers failed.\n\n\`\`\`${result.error}\`\`\``;
       await progressMessage.edit({ components: [panel(result.ok ? 'Automatic bypass result' : 'Automatic bypass failed', description, result.destination)] });
       await audit('autobypass.resolve', message.author.id, message.guildId, { channelId: message.channelId, provider: result.provider, ok: result.ok });
