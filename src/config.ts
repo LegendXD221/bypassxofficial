@@ -8,6 +8,7 @@ export const config = {
   token: process.env.BOT_TOKEN ?? '',
   clientId: process.env.CLIENT_ID ?? '',
   port: Number(process.env.PORT ?? 10000),
+  apiPort: Number(process.env.API_PORT ?? 8787),
   guildId: process.env.DISCORD_GUILD_ID,
   owners: new Set(csv('OWNER_USER_IDS')),
   databaseUrl: process.env.DATABASE_URL,

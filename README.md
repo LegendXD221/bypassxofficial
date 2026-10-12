@@ -57,6 +57,35 @@ npm run build
 npm start
 ```
 
+## Standalone REST API
+
+The API can run independently from Discord. It uses the same provider adapters but does not start a Discord client or require `BOT_TOKEN` or `CLIENT_ID`.
+
+```bash
+npm run build
+npm run start:api
+```
+
+Endpoints:
+
+| Method | Endpoint | Authentication | Purpose |
+|---|---|---|---|
+| `GET` | `/health` | None | Liveness check |
+| `GET` | `/v1/providers` | None | Provider cooldown status |
+| `GET` | `/v1/bypass?url=https://example.com` | API key | Resolve a URL |
+| `POST` | `/v1/bypass` | API key | Resolve `{ "url": "https://example.com" }` |
+
+Use either `Authorization: Bearer <API_KEYS value>` or `x-api-key: <API_KEYS value>`. Each configured key receives its own in-memory daily quota from `API_DAILY_QUOTA`; the counter resets at UTC midnight. Keep `API_ALLOW_ANONYMOUS=false` in production.
+
+Example:
+
+```bash
+curl -X POST http://localhost:8787/v1/bypass \
+  -H 'content-type: application/json' \
+  -H 'x-api-key: change-me-to-a-long-random-key' \
+  -d '{"url":"https://example.com"}'
+```
+
 Use `npm run dev` during development after slash commands have been deployed. Set `DISCORD_GUILD_ID` to deploy commands to one guild immediately; omit it for global command registration.
 
 ## Render deployment and UptimeRobot
