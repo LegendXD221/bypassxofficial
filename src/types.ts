@@ -24,6 +24,8 @@ export type BypassResult = {
   destination?: string;
   service?: string;
   pending?: string;
+  jobId?: string;
+  pollUrl?: string;
   captchaUrl?: string;
   wsUrl?: string;
   error?: string;

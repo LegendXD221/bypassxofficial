@@ -51,7 +51,7 @@ function endpointWithUrl(endpoint: string, target: string): string {
   return `${endpoint}${separator}url=${encodeURIComponent(target)}`;
 }
 
-async function callProviderOnce(provider: Provider, target: string, method: 'GET' | 'POST'): Promise<BypassResult> {
+async function callProviderOnce(provider: Provider, target: string, method: 'GET' | 'POST', includeTarget = true): Promise<BypassResult> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -60,7 +60,7 @@ async function callProviderOnce(provider: Provider, target: string, method: 'GET
     let body: string | undefined;
 
     if (method === 'GET') {
-      endpoint = endpointWithUrl(endpoint, target);
+      if (includeTarget) endpoint = endpointWithUrl(endpoint, target);
     } else {
       headers['content-type'] = 'application/json';
       body = JSON.stringify({ url: target });
@@ -91,6 +91,8 @@ async function callProviderOnce(provider: Provider, target: string, method: 'GET
       destination,
       service: stringValue(payload.service),
       pending: pending ? (status ?? 'PENDING') : stringValue(payload.pending),
+      jobId: stringValue(payload.id) ?? stringValue(payload.entry_id) ?? stringValue(payload.jobId),
+      pollUrl: stringValue(payload.pollUrl),
       captchaUrl: stringValue(payload.captchaUrl),
       wsUrl: stringValue(payload.wsUrl),
       ms: typeof payload.ms === 'number' ? payload.ms : undefined,
@@ -115,7 +117,11 @@ async function callProvider(provider: Provider, target: string): Promise<BypassR
   for (const method of alternateMethods(provider)) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
       try {
-        return await callProviderOnce(provider, target, method);
+        const result = await callProviderOnce(provider, target, method);
+        if (result.pending && provider.adapter === 'usebypass' && result.jobId) {
+          return await pollUseBypass(provider, target, result.jobId, result);
+        }
+        return result;
       } catch (error) {
         lastError = error;
         const typed = error as ProviderError;
@@ -125,6 +131,18 @@ async function callProvider(provider: Provider, target: string): Promise<BypassR
     }
   }
   throw lastError instanceof Error ? lastError : new Error('Provider request failed');
+}
+
+async function pollUseBypass(provider: Provider, target: string, jobId: string, initial: BypassResult): Promise<BypassResult> {
+  const base = new URL(provider.endpoint);
+  const pollEndpoint = initial.pollUrl ?? `${base.origin}/api/v1/bypass/result/${encodeURIComponent(jobId)}`;
+  let latest = initial;
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    latest = await callProviderOnce({ ...provider, endpoint: pollEndpoint }, target, 'GET', false);
+    if (latest.destination || !latest.pending) return latest;
+  }
+  return latest;
 }
 
 function isCoolingDown(name: string): boolean {

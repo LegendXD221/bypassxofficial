@@ -75,7 +75,7 @@ Endpoints:
 | `GET` | `/v1/bypass?url=https://example.com` | API key | Resolve a URL |
 | `POST` | `/v1/bypass` | API key | Resolve `{ "url": "https://example.com" }` |
 
-Use either `Authorization: Bearer <API_KEYS value>` or `x-api-key: <API_KEYS value>`. The standalone service uses only the free Alysse, UseBypass, and OmegaTech providers and has no paid-provider quota. Keep `API_ALLOW_ANONYMOUS=false` in production.
+Use either `Authorization: Bearer <API_KEYS value>` or `x-api-key: <API_KEYS value>`. The standalone service uses only the free Alysse, UseBypass, and OmegaTech providers and has no paid-provider quota. Successful destinations are cached for `API_CACHE_TTL_SECONDS` (default 300 seconds), simultaneous requests for the same normalized URL share one provider request, and UseBypass pending jobs are polled automatically. Localhost, private-network, and cloud-metadata URLs are rejected. Keep `API_ALLOW_ANONYMOUS=false` in production.
 
 Example:
 
