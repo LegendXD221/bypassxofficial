@@ -20,7 +20,11 @@ export const config = {
   alysseApiUrl: process.env.ALYSSE_API_URL ?? 'https://alysse.top/api/bypass',
   useBypassApiUrl: process.env.USEBYPASS_API_URL ?? 'https://usebypass.com/api/v1/bypass',
   useBypassToken: process.env.USEBYPASS_API_TOKEN,
-  omegaTechApiUrl: process.env.OMEGATECH_API_URL ?? 'https://api.omegatech.app/api/tools/All-bypass',
+  omegaTechApiUrl: process.env.OMEGATECH_API_URL ?? 'https://api.omegatech.app/api/tools/all-bypass',
+  bypassToolsApiUrl: process.env.BYPASSTOOLS_API_URL ?? 'https://api.bypass.tools/api/v1/bypass',
+  bypassToolsApiKey: process.env.BYPASSTOOLS_API_KEY,
+  bypassVipApiUrl: process.env.BYPASS_VIP_API_URL ?? 'https://api.bypass.vip/premium/bypass',
+  bypassVipApiKey: process.env.BYPASS_VIP_API_KEY,
   fallbackApisJson: process.env.BYPASSX_FALLBACK_APIS ?? '[]',
   dataFile: new URL('../data/config.json', import.meta.url),
 };

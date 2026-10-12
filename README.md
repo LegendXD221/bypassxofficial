@@ -4,7 +4,7 @@ A production-oriented TypeScript Discord bot built around the Alysse API, with *
 
 ## What is included
 
-- `/bypass url:<url>` calls **Alysse → UseBypass → OmegaTech → custom providers**.
+- `/bypass url:<url>` calls **Alysse → UseBypass → OmegaTech → optional BypassTools/Bypass.vip → custom providers**.
 - Components V2 result panels and destination buttons.
 - Neon tables for authorized guilds, providers, auto-bypass channels, bot settings, and audit logs.
 - `/server authorize|deauthorize|status` for owner-controlled guild access.
@@ -158,10 +158,12 @@ The fallback chain is:
 
 1. `ALYSSE_API_URL` — default `https://alysse.top/api/bypass`, JSON POST `{ "url": "..." }`.
 2. `USEBYPASS_API_URL` — default `https://usebypass.com/api/v1/bypass`, GET `?url=...`. Optional `USEBYPASS_API_TOKEN` is sent as `Authorization: Token ...`.
-3. `OMEGATECH_API_URL` — default `https://api.omegatech.app/api/tools/All-bypass`, JSON POST `{ "url": "..." }`.
-4. Custom providers stored in Neon.
+3. `OMEGATECH_API_URL` — default `https://api.omegatech.app/api/tools/all-bypass`. BypassX supports both JSON POST and GitHub-documented GET `?url=...` compatibility.
+4. `BYPASSTOOLS_API_KEY` — optional; enables the documented BypassTools API adapter with `x-api-key` authentication.
+5. `BYPASS_VIP_API_KEY` — optional; enables the Bypass.vip Premium adapter with `x-api-key` authentication.
+6. Custom providers stored in Neon.
 
-Override endpoint URLs through environment variables if a provider changes its route. Provider failures are recorded in the command result and the next provider is attempted automatically.
+Override endpoint URLs through environment variables if a provider changes its route. Provider failures are retried for transient errors, providers are temporarily cooled down after repeated failures, and the next provider is attempted automatically. Successful destinations are normalized across provider response shapes such as `destination`, `resultUrl`, `result`, `data`, and `link`.
 
 ## Custom fallback providers
 
