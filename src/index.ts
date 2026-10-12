@@ -92,7 +92,7 @@ if (process.argv[1] && basename(process.argv[1]) === basename(fileURLToPath(impo
       const result = await bypass(parsed.toString(), state.fallbackApis);
       const description = result.ok
         ? `Detected from <@${message.author.id}>\nProvider: **${result.provider}**${result.service ? ` · ${result.service}` : ''}${result.cached ? ' · cached' : ''}`
-        : `All providers failed.\n\n\`\`\`${result.error}\`\`\``;
+        : 'All providers failed. Try another supported link later.';
       await progressMessage.edit({ components: [panel(result.ok ? 'Automatic bypass result' : 'Automatic bypass failed', description, result.destination)] });
       await audit('autobypass.resolve', message.author.id, message.guildId, { channelId: message.channelId, provider: result.provider, ok: result.ok });
       if (channelConfig.deleteSource) {
