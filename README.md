@@ -10,6 +10,7 @@ A production-oriented TypeScript Discord bot built around the Alysse API, with *
 - `/server authorize|deauthorize|status` for owner-controlled guild access.
 - `/autobypass enable|disable|list` for owner-controlled message URL monitoring.
 - Automatic URL detection in configured text channels with per-user cooldown protection.
+- Auto-bypass posts `<@user> is bypassing link...`, edits that same bot message into the result, and can delete only that user's source/result pair after 30 seconds.
 - `/api add|remove|list` for custom fallback providers.
 - `/owner stats|health` for the owner dashboard.
 - `/status` for live gateway latency, storage, provider, uptime, and auto-bypass information.
@@ -121,6 +122,7 @@ Then, inside a server:
 ```text
 /server authorize
 /autobypass enable channel:#links
+/autobypass enable channel:#links delete_after_30s:true
 ```
 
 Users can now use `/bypass` in that authorized server, and links posted in the configured channel are handled automatically. To turn it off:
@@ -129,6 +131,15 @@ Users can now use `/bypass` in that authorized server, and links posted in the c
 /autobypass disable channel:#links
 /server deauthorize
 ```
+
+When auto-bypass is enabled, BypassX posts **AutoBypass Enabled — Paste Links To Bypass Them** in that channel. Cleanup is off by default and can be toggled per channel:
+
+```text
+/autobypass cleanup channel:#links enabled:true
+/autobypass cleanup channel:#links enabled:false
+```
+
+When enabled, only the triggering user's link message and the paired BypassX progress/result message are deleted. Messages from other users are never deleted by this cleanup. The delay defaults to 30 seconds and is controlled by `AUTO_BYPASS_DELETE_AFTER_SECONDS`.
 
 Owner-only commands are `/server`, `/api`, `/autobypass`, and `/owner`.
 

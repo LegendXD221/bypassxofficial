@@ -30,6 +30,8 @@ services:
         value: "15"
       - key: AUTO_BYPASS_MAX_URLS_PER_MESSAGE
         value: "1"
+      - key: AUTO_BYPASS_DELETE_AFTER_SECONDS
+        value: "30"
       - key: STATUS_ROTATOR_INTERVAL_SECONDS
         value: "90"
       - key: USEBYPASS_API_TOKEN

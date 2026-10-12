@@ -68,8 +68,8 @@ if (process.argv[1] && basename(process.argv[1]) === basename(fileURLToPath(impo
 
   client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot || !message.guildId || !state.authorizedGuildIds.includes(message.guildId)) return;
-    const channel = state.autoBypassChannels.find((item) => item.guildId === message.guildId && item.channelId === message.channelId);
-    if (!channel) return;
+    const channelConfig = state.autoBypassChannels.find((item) => item.guildId === message.guildId && item.channelId === message.channelId);
+    if (!channelConfig) return;
     const urls = [...new Set((message.content.match(urlPattern) ?? []).map((url) => url.replace(/[.,!?;:]+$/, '')))].slice(0, Math.max(1, config.autoBypassMaxUrlsPerMessage));
     if (!urls.length) return;
     const cooldownKey = `${message.guildId}:${message.channelId}:${message.author.id}`;
@@ -78,12 +78,21 @@ if (process.argv[1] && basename(process.argv[1]) === basename(fileURLToPath(impo
     if (now - lastRun < Math.max(0, config.autoBypassCooldownSeconds) * 1000) return;
     cooldowns.set(cooldownKey, now);
     try {
+      const progressMessage = await message.reply({
+        components: [panel('BypassX', `<@${message.author.id}> is bypassing link...`)],
+        flags: publicV2Flags,
+      });
       const result = await bypass(urls[0], state.fallbackApis);
       const description = result.ok
         ? `Detected from <@${message.author.id}>\nProvider: **${result.provider}**${result.service ? ` · ${result.service}` : ''}`
         : `All providers failed.\n\n\`\`\`${result.error}\`\`\``;
-      await message.reply({ components: [panel(result.ok ? 'Automatic bypass result' : 'Automatic bypass failed', description, result.destination)], flags: publicV2Flags });
+      await progressMessage.edit({ components: [panel(result.ok ? 'Automatic bypass result' : 'Automatic bypass failed', description, result.destination)] });
       await audit('autobypass.resolve', message.author.id, message.guildId, { channelId: message.channelId, provider: result.provider, ok: result.ok });
+      if (channelConfig.deleteSource) {
+        setTimeout(() => {
+          void Promise.allSettled([message.delete(), progressMessage.delete()]);
+        }, config.autoBypassDeleteAfterSeconds * 1000);
+      }
     } catch (error) { console.error('Auto-bypass error:', error); }
   });
 
