@@ -2,12 +2,7 @@ import { ActivityType, type Client } from 'discord.js';
 import { config } from '../config.js';
 import type { PersistedConfig } from '../types.js';
 
-const defaultMessages = [
-  'Use /bypass to resolve links',
-  'Alysse → UseBypass → OmegaTech',
-  'Components V2 online',
-  'Protecting authorized servers',
-];
+const defaultMessages = ['Use /bypass to resolve links'];
 
 function messages(state: PersistedConfig): string[] {
   return (config.statusMessages.length ? config.statusMessages : defaultMessages).map((message) =>
