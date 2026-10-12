@@ -12,6 +12,8 @@ A production-oriented TypeScript Discord bot built around the Alysse API, with *
 - Automatic URL detection in configured text channels with per-user cooldown protection.
 - `/api add|remove|list` for custom fallback providers.
 - `/owner stats|health` for the owner dashboard.
+- `/status` for live gateway latency, storage, provider, uptime, and auto-bypass information.
+- Rotating Discord presence with configurable messages and interval.
 - Commands are auto-loaded from `src/commands`; add a new command file and redeploy.
 - Local JSON fallback is retained for development when `DATABASE_URL` is not set.
 
@@ -110,6 +112,15 @@ Users can now use `/bypass` in that authorized server, and links posted in the c
 ```
 
 Owner-only commands are `/server`, `/api`, `/autobypass`, and `/owner`.
+
+`/status` is available in authorized guilds and shows the live bot state. The presence rotator changes the bot activity every 90 seconds by default. Customize it in Render or `.env`:
+
+```env
+STATUS_ROTATOR_INTERVAL_SECONDS=90
+STATUS_ROTATOR_MESSAGES=Use /bypass to resolve links,{guilds} authorized guilds,{providers} providers online
+```
+
+Supported placeholders are `{guilds}`, `{channels}`, and `{providers}`. The interval is clamped to at least 30 seconds to avoid Discord presence spam.
 
 ## Built-in providers
 

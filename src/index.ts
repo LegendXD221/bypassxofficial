@@ -9,6 +9,7 @@ import { audit } from './services/database.js';
 import { initializeStorage, loadConfig } from './utils/storage.js';
 import { panel, publicV2Flags } from './utils/components.js';
 import { startHealthServer } from './web.js';
+import { startStatusRotator } from './services/presence.js';
 
 export async function loadCommands(): Promise<Command[]> {
   const directory = dirname(fileURLToPath(import.meta.url));
@@ -38,6 +39,7 @@ if (process.argv[1] && basename(process.argv[1]) === basename(fileURLToPath(impo
   const cooldowns = new Map<string, number>();
 
   client.once(Events.ClientReady, (ready) => {
+    startStatusRotator(client, state);
     console.log(`BypassX online as ${ready.user.tag}; ${commands.size} commands loaded; ${state.autoBypassChannels.length} auto-bypass channels active.`);
   });
 

@@ -26,5 +26,7 @@ services:
         value: "15"
       - key: AUTO_BYPASS_MAX_URLS_PER_MESSAGE
         value: "1"
+      - key: STATUS_ROTATOR_INTERVAL_SECONDS
+        value: "90"
       - key: USEBYPASS_API_TOKEN
         sync: false

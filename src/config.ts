@@ -14,6 +14,8 @@ export const config = {
   defaultAuthorizedGuilds: csv('DEFAULT_AUTHORIZED_GUILD_IDS'),
   autoBypassCooldownSeconds: Number(process.env.AUTO_BYPASS_COOLDOWN_SECONDS ?? 15),
   autoBypassMaxUrlsPerMessage: Number(process.env.AUTO_BYPASS_MAX_URLS_PER_MESSAGE ?? 1),
+  statusIntervalSeconds: Math.max(30, Number(process.env.STATUS_ROTATOR_INTERVAL_SECONDS ?? 90)),
+  statusMessages: csv('STATUS_ROTATOR_MESSAGES'),
   alysseApiUrl: process.env.ALYSSE_API_URL ?? 'https://alysse.top/api/bypass',
   useBypassApiUrl: process.env.USEBYPASS_API_URL ?? 'https://usebypass.com/api/v1/bypass',
   useBypassToken: process.env.USEBYPASS_API_TOKEN,
