@@ -105,22 +105,30 @@ const server = createServer(async (req, res) => {
       json(res, 401, { ok: false, error: 'Missing or invalid API key' });
       return;
     }
-    const remainingBefore = quotaRemaining(key);
-    if (remainingBefore <= 0) {
-      json(res, 429, { ok: false, error: 'Daily quota exceeded', quota: { limit: dailyQuota, remaining: 0, reset: 'UTC midnight' } });
-      return;
-    }
-
     const target = await targetFromRequest(req, url);
     if (!validTarget(target)) {
       json(res, 400, { ok: false, error: 'Provide a valid HTTP(S) URL in the url field' });
       return;
     }
 
-    const remaining = consume(key);
-    const result = await bypass(target, []);
+    // Always try the free providers first. They never consume the paid-provider quota.
+    let result = await bypass(target, [], { tier: 'free' });
+    let counted = false;
+    let remaining = quotaRemaining(key);
     if (!result.ok) {
-      json(res, 502, { ok: false, error: 'All providers failed', details: result.error, quota: { limit: dailyQuota, remaining, reset: 'UTC midnight' } });
+      if (remaining <= 0) {
+        json(res, 429, { ok: false, error: 'Free providers could not resolve this link and the paid-provider daily quota is exhausted', quota: { limit: dailyQuota, remaining: 0, reset: 'UTC midnight', counted: false } });
+        return;
+      }
+      // Paid/keyed providers are only attempted after free providers fail.
+      result = await bypass(target, [], { tier: 'paid' });
+      if (result.ok) {
+        remaining = consume(key);
+        counted = true;
+      }
+    }
+    if (!result.ok) {
+      json(res, 502, { ok: false, error: 'All providers failed', details: result.error, quota: { limit: dailyQuota, remaining, reset: 'UTC midnight', counted } });
       return;
     }
 
@@ -131,7 +139,7 @@ const server = createServer(async (req, res) => {
       service: result.service,
       pending: result.pending,
       durationMs: result.ms,
-      quota: { limit: dailyQuota, remaining, reset: 'UTC midnight' },
+      quota: { limit: dailyQuota, remaining, reset: 'UTC midnight', counted },
     });
   } catch (error) {
     json(res, 400, { ok: false, error: error instanceof Error ? error.message : 'Bad request' });

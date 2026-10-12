@@ -8,6 +8,8 @@ type ProviderError = Error & { status?: number; retryable?: boolean };
 
 type Health = { failures: number; cooldownUntil: number };
 
+export type BypassOptions = { tier?: 'free' | 'paid' | 'all' };
+
 const timeoutMs = 12_000;
 const retryDelayMs = 350;
 const health = new Map<string, Health>();
@@ -146,19 +148,19 @@ function markFailure(name: string): void {
   health.set(name, { failures, cooldownUntil: Date.now() + cooldownMs });
 }
 
-function builtInProviders(): Provider[] {
+function builtInProviders(tier: BypassOptions['tier'] = 'all'): Provider[] {
   const providers: Provider[] = [
     { name: 'Alysse', endpoint: config.alysseApiUrl, method: 'POST', adapter: 'generic' },
     { name: 'UseBypass', endpoint: config.useBypassApiUrl, method: 'GET', adapter: 'usebypass' },
     { name: 'OmegaTech', endpoint: config.omegaTechApiUrl, method: 'POST', adapter: 'omegatech' },
   ];
-  if (config.bypassToolsApiKey) {
+  if (tier !== 'free' && config.bypassToolsApiKey) {
     providers.push({ name: 'BypassTools', endpoint: config.bypassToolsApiUrl, method: 'POST', adapter: 'bypasstools' });
   }
-  if (config.bypassVipApiKey) {
+  if (tier !== 'free' && config.bypassVipApiKey) {
     providers.push({ name: 'Bypass.vip Premium', endpoint: config.bypassVipApiUrl, method: 'GET', adapter: 'bypassvip' });
   }
-  return providers;
+  return tier === 'paid' ? providers.filter((provider) => !['Alysse', 'UseBypass', 'OmegaTech'].includes(provider.name)) : providers;
 }
 
 export function providerHealthSnapshot(): Array<{ provider: string; failures: number; cooldownUntil?: number }> {
@@ -169,8 +171,8 @@ export function providerHealthSnapshot(): Array<{ provider: string; failures: nu
   }));
 }
 
-export async function bypass(target: string, fallbacks: FallbackApi[]): Promise<BypassResult> {
-  const providers = [...builtInProviders(), ...fallbacks] as Provider[];
+export async function bypass(target: string, fallbacks: FallbackApi[], options: BypassOptions = {}): Promise<BypassResult> {
+  const providers = [...builtInProviders(options.tier), ...(options.tier === 'free' ? [] : fallbacks)] as Provider[];
   const errors: string[] = [];
   for (const provider of providers) {
     if (isCoolingDown(provider.name)) {

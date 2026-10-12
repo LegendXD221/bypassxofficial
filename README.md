@@ -75,7 +75,7 @@ Endpoints:
 | `GET` | `/v1/bypass?url=https://example.com` | API key | Resolve a URL |
 | `POST` | `/v1/bypass` | API key | Resolve `{ "url": "https://example.com" }` |
 
-Use either `Authorization: Bearer <API_KEYS value>` or `x-api-key: <API_KEYS value>`. Each configured key receives its own in-memory daily quota from `API_DAILY_QUOTA`; the counter resets at UTC midnight. Keep `API_ALLOW_ANONYMOUS=false` in production.
+Use either `Authorization: Bearer <API_KEYS value>` or `x-api-key: <API_KEYS value>`. Each configured key receives its own in-memory daily quota from `API_DAILY_QUOTA`; the counter resets at UTC midnight. The quota counts only successful resolutions through optional paid/keyed providers. Successful Alysse, UseBypass, and OmegaTech resolutions are explicitly not counted. Keep `API_ALLOW_ANONYMOUS=false` in production.
 
 Example:
 
