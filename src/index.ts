@@ -86,7 +86,7 @@ if (process.argv[1] && basename(process.argv[1]) === basename(fileURLToPath(impo
     if (!parsed) return;
     try {
       const progressMessage = await message.reply({
-        components: [panel('BypassX', `<@${message.author.id}> is bypassing link...`)],
+        components: [panel('BypassX', `<@${message.author.id}> bypassing your link...`)],
         flags: publicV2Flags,
       });
       const result = await bypass(parsed.toString(), state.fallbackApis);
