@@ -20,6 +20,10 @@ services:
         sync: false
       - key: DISCORD_GUILD_ID
         sync: false
+      - key: AUTO_SYNC_COMMANDS
+        value: "true"
+      - key: CLEAR_GLOBAL_COMMANDS
+        value: "true"
       - key: DEFAULT_AUTHORIZED_GUILD_IDS
         value: ""
       - key: AUTO_BYPASS_COOLDOWN_SECONDS

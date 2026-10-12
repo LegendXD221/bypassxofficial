@@ -15,6 +15,7 @@ A production-oriented TypeScript Discord bot built around the Alysse API, with *
 - `/status` for live gateway latency, storage, provider, uptime, and auto-bypass information.
 - Rotating Discord presence with configurable messages and interval.
 - Commands are auto-loaded from `src/commands`; add a new command file and redeploy.
+- Slash commands are synchronized automatically on bot startup, so new commands replace stale registrations.
 - Local JSON fallback is retained for development when `DATABASE_URL` is not set.
 
 ## Discord setup
@@ -76,6 +77,24 @@ BypassX includes a small HTTP server in the same process as the Discord bot. It 
 5. Enable **Message Content Intent** in Discord before using auto-bypass.
 
 The service is configured with `npm ci && npm run build`, `npm start`, and Render health checks against `/health`. Render supplies `PORT` automatically; do not hard-code it.
+
+### Slash-command synchronization
+
+The bot now synchronizes its current command list on every startup. For fast development updates, set:
+
+```env
+DISCORD_GUILD_ID=YOUR_TEST_SERVER_ID
+AUTO_SYNC_COMMANDS=true
+CLEAR_GLOBAL_COMMANDS=true
+```
+
+When `DISCORD_GUILD_ID` is set, commands appear in that guild quickly and old global registrations are cleared. Without a guild ID, commands are registered globally and Discord may take up to an hour to propagate changes. You can also manually run:
+
+```bash
+npm run deploy
+```
+
+If old commands still appear after a Render deploy, confirm that `CLIENT_ID` belongs to the same Discord application as `BOT_TOKEN`, set `DISCORD_GUILD_ID` to the server being tested, redeploy, and restart the service.
 
 ### Add UptimeRobot
 

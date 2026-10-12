@@ -10,6 +10,7 @@ import { initializeStorage, loadConfig } from './utils/storage.js';
 import { panel, publicV2Flags } from './utils/components.js';
 import { startHealthServer } from './web.js';
 import { startStatusRotator } from './services/presence.js';
+import { syncCommands } from './services/command-sync.js';
 
 export async function loadCommands(): Promise<Command[]> {
   const directory = dirname(fileURLToPath(import.meta.url));
@@ -30,7 +31,9 @@ if (process.argv[1] && basename(process.argv[1]) === basename(fileURLToPath(impo
   const state = await loadConfig();
   const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
   const commands = new Collection<string, Command>();
-  for (const command of await loadCommands()) commands.set(command.data.name, command);
+  const loadedCommands = await loadCommands();
+  for (const command of loadedCommands) commands.set(command.data.name, command);
+  if (process.env.AUTO_SYNC_COMMANDS !== 'false') await syncCommands(loadedCommands);
   const healthServer = startHealthServer({
     port: config.port,
     isReady: () => client.isReady(),
