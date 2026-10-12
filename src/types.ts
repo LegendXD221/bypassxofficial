@@ -3,7 +3,7 @@ export type FallbackApi = {
   endpoint: string;
   authEnv?: string;
   method?: 'GET' | 'POST';
-  adapter?: 'generic' | 'usebypass' | 'omegatech' | 'bypasstools' | 'bypassvip';
+  adapter?: 'generic' | 'usebypass' | 'omegatech';
 };
 
 export type PersistedConfig = {

@@ -8,8 +8,6 @@ type ProviderError = Error & { status?: number; retryable?: boolean };
 
 type Health = { failures: number; cooldownUntil: number };
 
-export type BypassOptions = { tier?: 'free' | 'paid' | 'all' };
-
 const timeoutMs = 12_000;
 const retryDelayMs = 350;
 const health = new Map<string, Health>();
@@ -44,7 +42,7 @@ function extractDestination(value: unknown, target: string, depth = 0): string |
 
 function providerMethod(provider: Provider): 'GET' | 'POST' {
   if (provider.method) return provider.method;
-  if (provider.adapter === 'usebypass' || provider.adapter === 'bypassvip') return 'GET';
+  if (provider.adapter === 'usebypass') return 'GET';
   return 'POST';
 }
 
@@ -70,10 +68,6 @@ async function callProviderOnce(provider: Provider, target: string, method: 'GET
 
     if (provider.adapter === 'usebypass' && config.useBypassToken) {
       headers.authorization = `Token ${config.useBypassToken}`;
-    } else if (provider.adapter === 'bypassvip' && config.bypassVipApiKey) {
-      headers['x-api-key'] = config.bypassVipApiKey;
-    } else if (provider.adapter === 'bypasstools' && config.bypassToolsApiKey) {
-      headers['x-api-key'] = config.bypassToolsApiKey;
     } else if (provider.authEnv && process.env[provider.authEnv]) {
       headers.authorization = `Bearer ${process.env[provider.authEnv]}`;
     }
@@ -148,19 +142,12 @@ function markFailure(name: string): void {
   health.set(name, { failures, cooldownUntil: Date.now() + cooldownMs });
 }
 
-function builtInProviders(tier: BypassOptions['tier'] = 'all'): Provider[] {
-  const providers: Provider[] = [
+function builtInProviders(): Provider[] {
+  return [
     { name: 'Alysse', endpoint: config.alysseApiUrl, method: 'POST', adapter: 'generic' },
     { name: 'UseBypass', endpoint: config.useBypassApiUrl, method: 'GET', adapter: 'usebypass' },
     { name: 'OmegaTech', endpoint: config.omegaTechApiUrl, method: 'POST', adapter: 'omegatech' },
   ];
-  if (tier !== 'free' && config.bypassToolsApiKey) {
-    providers.push({ name: 'BypassTools', endpoint: config.bypassToolsApiUrl, method: 'POST', adapter: 'bypasstools' });
-  }
-  if (tier !== 'free' && config.bypassVipApiKey) {
-    providers.push({ name: 'Bypass.vip Premium', endpoint: config.bypassVipApiUrl, method: 'GET', adapter: 'bypassvip' });
-  }
-  return tier === 'paid' ? providers.filter((provider) => !['Alysse', 'UseBypass', 'OmegaTech'].includes(provider.name)) : providers;
 }
 
 export function providerHealthSnapshot(): Array<{ provider: string; failures: number; cooldownUntil?: number }> {
@@ -171,8 +158,8 @@ export function providerHealthSnapshot(): Array<{ provider: string; failures: nu
   }));
 }
 
-export async function bypass(target: string, fallbacks: FallbackApi[], options: BypassOptions = {}): Promise<BypassResult> {
-  const providers = [...builtInProviders(options.tier), ...(options.tier === 'free' ? [] : fallbacks)] as Provider[];
+export async function bypass(target: string, fallbacks: FallbackApi[]): Promise<BypassResult> {
+  const providers = [...builtInProviders(), ...fallbacks] as Provider[];
   const errors: string[] = [];
   for (const provider of providers) {
     if (isCoolingDown(provider.name)) {

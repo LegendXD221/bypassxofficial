@@ -1,12 +1,9 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { config } from './config.js';
 import { bypass, providerHealthSnapshot } from './services/bypass.js';
 
 const apiPort = Number(process.env.API_PORT ?? 8787);
-const dailyQuota = Math.max(1, Number(process.env.API_DAILY_QUOTA ?? 100));
 const apiKeys = new Set((process.env.API_KEYS ?? '').split(',').map((value) => value.trim()).filter(Boolean));
 const anonymousAllowed = process.env.API_ALLOW_ANONYMOUS === 'true';
-const usage = new Map<string, { day: string; count: number }>();
 const maxBodyBytes = 32 * 1024;
 
 function json(res: ServerResponse, status: number, payload: unknown): void {
@@ -35,20 +32,6 @@ function authenticate(req: IncomingMessage): string | undefined {
   if (key && apiKeys.has(key)) return key;
   if (anonymousAllowed && apiKeys.size === 0) return 'anonymous';
   return undefined;
-}
-
-function quotaRemaining(key: string): number {
-  const current = usage.get(key);
-  if (!current || current.day !== today()) return dailyQuota;
-  return Math.max(0, dailyQuota - current.count);
-}
-
-function consume(key: string): number {
-  const day = today();
-  const current = usage.get(key);
-  const next = !current || current.day !== day ? { day, count: 1 } : { day, count: current.count + 1 };
-  usage.set(key, next);
-  return Math.max(0, dailyQuota - next.count);
 }
 
 async function readBody(req: IncomingMessage): Promise<string> {
@@ -100,8 +83,7 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    const key = authenticate(req);
-    if (!key) {
+    if (!authenticate(req)) {
       json(res, 401, { ok: false, error: 'Missing or invalid API key' });
       return;
     }
@@ -111,24 +93,9 @@ const server = createServer(async (req, res) => {
       return;
     }
 
-    // Always try the free providers first. They never consume the paid-provider quota.
-    let result = await bypass(target, [], { tier: 'free' });
-    let counted = false;
-    let remaining = quotaRemaining(key);
+    const result = await bypass(target, []);
     if (!result.ok) {
-      if (remaining <= 0) {
-        json(res, 429, { ok: false, error: 'Free providers could not resolve this link and the paid-provider daily quota is exhausted', quota: { limit: dailyQuota, remaining: 0, reset: 'UTC midnight', counted: false } });
-        return;
-      }
-      // Paid/keyed providers are only attempted after free providers fail.
-      result = await bypass(target, [], { tier: 'paid' });
-      if (result.ok) {
-        remaining = consume(key);
-        counted = true;
-      }
-    }
-    if (!result.ok) {
-      json(res, 502, { ok: false, error: 'All providers failed', details: result.error, quota: { limit: dailyQuota, remaining, reset: 'UTC midnight', counted } });
+      json(res, 502, { ok: false, error: 'All free providers failed', details: result.error });
       return;
     }
 
@@ -139,7 +106,6 @@ const server = createServer(async (req, res) => {
       service: result.service,
       pending: result.pending,
       durationMs: result.ms,
-      quota: { limit: dailyQuota, remaining, reset: 'UTC midnight', counted },
     });
   } catch (error) {
     json(res, 400, { ok: false, error: error instanceof Error ? error.message : 'Bad request' });
@@ -149,5 +115,5 @@ const server = createServer(async (req, res) => {
 server.listen(apiPort, '0.0.0.0', () => {
   console.log(`BypassX API listening on 0.0.0.0:${apiPort}`);
   console.log(`Authentication: ${apiKeys.size ? 'API key required' : anonymousAllowed ? 'anonymous development mode' : 'API key required but none configured'}`);
-  console.log(`Daily quota: ${dailyQuota}`);
+  console.log('Provider mode: free-only (Alysse, UseBypass, OmegaTech)');
 });
