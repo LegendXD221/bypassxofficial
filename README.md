@@ -23,7 +23,7 @@ A production-oriented TypeScript Discord bot built around the Alysse API, with *
 
 1. Create a Discord application and bot in the [Discord Developer Portal](https://discord.com/developers/applications).
 2. Enable the **Message Content Intent** under Bot settings. This is required for automatic URL detection.
-3. Invite the bot with the `bot` and `applications.commands` scopes. It needs `View Channel`, `Send Messages`, and `Use Application Commands`.
+3. Invite the bot with the `bot` and `applications.commands` scopes. It needs `View Channel`, `Send Messages`, and `Use Application Commands`; add `Manage Messages` if paired auto-bypass cleanup is enabled.
 4. Copy `.env.example` to `.env` and fill in `BOT_TOKEN`, `CLIENT_ID`, `OWNER_USER_IDS`, and `DATABASE_URL`.
 
 ## Neon setup
