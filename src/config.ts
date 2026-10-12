@@ -19,7 +19,7 @@ export const config = {
   statusIntervalSeconds: Math.max(30, Number(process.env.STATUS_ROTATOR_INTERVAL_SECONDS ?? 90)),
   statusMessages: csv('STATUS_ROTATOR_MESSAGES'),
   alysseApiUrl: process.env.ALYSSE_API_URL ?? 'https://alysse.top/api/bypass',
-  useBypassApiUrl: process.env.USEBYPASS_API_URL ?? 'https://usebypas.com/api/v1/bypass',
+  useBypassApiUrl: process.env.USEBYPASS_API_URL ?? 'https://usebypass.com/api/v1/bypass',
   useBypassToken: process.env.USEBYPASS_API_TOKEN,
   omegaTechApiUrl: process.env.OMEGATECH_API_URL ?? 'https://api.omegatech.app/api/tools/all-bypass',
   fallbackApisJson: process.env.BYPASSX_FALLBACK_APIS ?? '[]',
